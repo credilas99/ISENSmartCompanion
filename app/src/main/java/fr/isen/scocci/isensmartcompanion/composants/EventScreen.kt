@@ -1,6 +1,7 @@
 package fr.isen.scocci.isensmartcompanion
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,66 +15,141 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import fr.isen.scocci.isensmartcompanion.api.RetrofitInstance
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.Serializable
 
-// Liste d'événements fictifs
-data class Event(val title: String, val date: String, val description: String)
-
-val eventList = listOf(
-    Event(
-        "Soirée BDE",
-        "25 Nov 2024",
-        "Une soirée organisée par le BDE avec de nombreuses animations."
-    ),
-    Event(
-        "Gala de l'ISEN",
-        "10 Déc 2024",
-        "Un gala prestigieux pour les étudiants et leurs familles."
-    ),
-    Event(
-        "Journée de Cohésion",
-        "15 Jan 2025",
-        "Activités en plein air pour renforcer l'esprit d'équipe."
-    ),
-    Event(
-        "Hackathon ISEN",
-        "20 Fév 2025",
-        "Un événement de codage intense pour les développeurs en herbe."
-    ),
-    Event(
-        "Conférence sur l'IA",
-        "5 Mars 2025",
-        "Exploration des dernières tendances en intelligence artificielle."
-    )
-)
+// Nouvelle classe Event avec id comme String
+data class Event(
+    val id: String,
+    val title: String,
+    val description: String,
+    val date: String,
+    val location: String,
+    val category: String
+) : Serializable
 
 @Composable
 fun EventScreen() {
     val context = LocalContext.current
+    var events by remember { mutableStateOf<List<Event>>(emptyList()) } // État pour stocker les événements
+    var isLoading by remember { mutableStateOf(true) } // Variable pour gérer l'état de chargement
+    var errorMessage by remember { mutableStateOf<String?>(null) } // Message d'erreur
 
-    LazyColumn(
+    // Charger les événements à partir de l'API
+    LaunchedEffect(Unit) {
+        // Mettre l'état de chargement à true
+        isLoading = true
+        errorMessage = null
+
+        // Appel de la fonction fetchEvents
+        fetchEvents(
+            onSuccess = { fetchedEvents ->
+                events = fetchedEvents
+                isLoading = false
+            },
+            onFailure = { error ->
+                errorMessage = error
+                isLoading = false
+            }
+        )
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp) // Espacement entre les éléments
+            .background(Color(0x80F7A0A0))
+            .padding(16.dp)
     ) {
-        items(eventList) { event ->
-            EventItem(event) {
-                // Action au clic sur un événement : navigation vers l'écran de détails
-                val intent = Intent(context, EventDetailActivity::class.java).apply {
-                    putExtra("eventTitle", event.title)
-                    putExtra("eventDate", event.date)
-                    putExtra("eventDescription", event.description)
+        // Ajouter un titre centré en haut de l'écran
+        Text(
+            text = "évènements",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = Color.Red,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp
+            ),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+
+        // Afficher un message d'erreur s'il y en a
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        // Liste d'événements
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(events) { event ->
+                EventItem(event) {
+                    // Navigation vers l'écran de détails
+                    val intent = Intent(context, EventDetailActivity::class.java).apply {
+                        putExtra("eventId", event.id)
+                        putExtra("eventTitle", event.title)
+                        putExtra("eventDate", event.date)
+                        putExtra("eventDescription", event.description)
+                        putExtra("eventLocation", event.location)
+                        putExtra("eventCategory", event.category)
+                    }
+                    context.startActivity(intent)
                 }
-                context.startActivity(intent)
             }
         }
+
+        // Affichage d'un indicateur de chargement si nécessaire
+        if (isLoading) {
+            Text(text = "Chargement en cours...", style = MaterialTheme.typography.bodyMedium)
+        }
     }
+}
+
+// Fonction fetchEvents() pour effectuer l'appel API de manière asynchrone
+fun fetchEvents(
+    onSuccess: (List<Event>) -> Unit,
+    onFailure: (String) -> Unit
+) {
+    RetrofitInstance.api.getEvents().enqueue(object : Callback<List<Event>> {
+        override fun onResponse(call: Call<List<Event>>, response: Response<List<Event>>) {
+            if (response.isSuccessful) {
+                // Appeler onSuccess avec les événements récupérés
+                onSuccess(response.body() ?: emptyList())
+            } else {
+                // Appeler onFailure avec un message d'erreur
+                onFailure("Erreur de chargement des événements. Code: ${response.code()}")
+            }
+        }
+
+        override fun onFailure(call: Call<List<Event>>, t: Throwable) {
+            // Appeler onFailure en cas de problème réseau
+            onFailure("Erreur de réseau: ${t.localizedMessage}")
+        }
+    })
 }
 
 @Composable
@@ -82,7 +158,7 @@ fun EventItem(event: Event, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+        colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.red_2))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -103,9 +179,19 @@ fun EventItem(event: Event, onClick: () -> Unit) {
                 )
             )
             Text(
+                text = "Lieu : ${event.location}",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                color = Color.DarkGray
+            )
+            Text(
+                text = "Catégorie : ${event.category}",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                color = Color.DarkGray
+            )
+            Text(
                 text = event.description,
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                maxLines = 2 // Limite le texte à 2 lignes pour éviter l'encombrement
+                maxLines = 2
             )
         }
     }
