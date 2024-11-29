@@ -229,9 +229,9 @@ fun EventItem(event: Event, onClick: () -> Unit) {
                     preferencesHelper.setEventNotification(event.id, isNotified)
 
                     if (isNotified) {
-                        // Planifier la notification après 30 secondes
+                        // Planifier la notification après 10 secondes
                         val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
-                            .setInitialDelay(30, TimeUnit.SECONDS)
+                            .setInitialDelay(10, TimeUnit.SECONDS)
                             .setInputData(workDataOf("title" to "Événement ajouté!", "message" to "Ne manquez pas cet événement!"))
                             .build()
 
