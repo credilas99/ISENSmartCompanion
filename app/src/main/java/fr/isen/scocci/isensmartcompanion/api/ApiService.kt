@@ -1,6 +1,6 @@
 package fr.isen.scocci.isensmartcompanion.api
 
-import fr.isen.scocci.isensmartcompanion.Event
+import fr.isen.scocci.isensmartcompanion.composants.Event
 import retrofit2.Call
 import retrofit2.http.GET
 

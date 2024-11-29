@@ -5,8 +5,6 @@ import com.google.ai.client.generativeai.type.BlockThreshold
 import com.google.ai.client.generativeai.type.HarmCategory
 import com.google.ai.client.generativeai.type.SafetySetting
 import com.google.ai.client.generativeai.type.generationConfig
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 val model = GenerativeModel(
     modelName = "gemini-1.5-flash-001",
@@ -29,7 +27,8 @@ val model = GenerativeModel(
 suspend fun generateText(prompt: String): String {
     return try {
         // Appel à une méthode de génération sur l'objet 'model'
-        val result = model.generateContent(prompt)  // Assurez-vous d'avoir une méthode valide pour la génération de texte
+        val result =
+            model.generateContent(prompt)  // Assurez-vous d'avoir une méthode valide pour la génération de texte
         result.text ?: "Aucune réponse générée"
     } catch (e: Exception) {
         "Erreur : ${e.message}"

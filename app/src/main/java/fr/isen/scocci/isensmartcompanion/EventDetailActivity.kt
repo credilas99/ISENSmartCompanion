@@ -25,7 +25,8 @@ class EventDetailActivity : ComponentActivity() {
         val eventId = intent.getStringExtra("eventId") ?: "ID inconnu" // Changement ici
         val eventTitle = intent.getStringExtra("eventTitle") ?: "Événement inconnu"
         val eventDate = intent.getStringExtra("eventDate") ?: "Date inconnue"
-        val eventDescription = intent.getStringExtra("eventDescription") ?: "Description non disponible"
+        val eventDescription =
+            intent.getStringExtra("eventDescription") ?: "Description non disponible"
         val eventLocation = intent.getStringExtra("eventLocation") ?: "Lieu non spécifié"
         val eventCategory = intent.getStringExtra("eventCategory") ?: "Catégorie inconnue"
 

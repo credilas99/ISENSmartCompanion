@@ -1,17 +1,23 @@
-package fr.isen.scocci.isensmartcompanion
+package fr.isen.scocci.isensmartcompanion.composants
 
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -27,11 +34,20 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
+import androidx.work.workDataOf
+import fr.isen.scocci.isensmartcompanion.EventDetailActivity
+import fr.isen.scocci.isensmartcompanion.R
 import fr.isen.scocci.isensmartcompanion.api.RetrofitInstance
+import fr.isen.scocci.isensmartcompanion.save.NotificationWorker
+import fr.isen.scocci.isensmartcompanion.save.SharedPreferences
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.Serializable
+import java.util.concurrent.TimeUnit
 
 // Nouvelle classe Event avec id comme String
 data class Event(
@@ -77,7 +93,7 @@ fun EventScreen() {
     ) {
         // Ajouter un titre centré en haut de l'écran
         Text(
-            text = "évènements",
+            text = "Événements",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
@@ -107,18 +123,21 @@ fun EventScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(events) { event ->
-                EventItem(event) {
-                    // Navigation vers l'écran de détails
-                    val intent = Intent(context, EventDetailActivity::class.java).apply {
-                        putExtra("eventId", event.id)
-                        putExtra("eventTitle", event.title)
-                        putExtra("eventDate", event.date)
-                        putExtra("eventDescription", event.description)
-                        putExtra("eventLocation", event.location)
-                        putExtra("eventCategory", event.category)
+                EventItem(
+                    event = event,
+                    onClick = {
+                        // Navigation vers l'écran de détails
+                        val intent = Intent(context, EventDetailActivity::class.java).apply {
+                            putExtra("eventId", event.id)
+                            putExtra("eventTitle", event.title)
+                            putExtra("eventDate", event.date)
+                            putExtra("eventDescription", event.description)
+                            putExtra("eventLocation", event.location)
+                            putExtra("eventCategory", event.category)
+                        }
+                        context.startActivity(intent)
                     }
-                    context.startActivity(intent)
-                }
+                )
             }
         }
 
@@ -154,45 +173,79 @@ fun fetchEvents(
 
 @Composable
 fun EventItem(event: Event, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val preferencesHelper = remember { SharedPreferences(context) }
+    var isNotified by remember { mutableStateOf(preferencesHelper.isEventNotified(event.id)) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.red_2))
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = event.title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = event.title,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
                 )
-            )
-            Text(
-                text = event.date,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.Gray,
-                    fontSize = 14.sp
+                Text(
+                    text = event.date,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
                 )
-            )
-            Text(
-                text = "Lieu : ${event.location}",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                color = Color.DarkGray
-            )
-            Text(
-                text = "Catégorie : ${event.category}",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                color = Color.DarkGray
-            )
-            Text(
-                text = event.description,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                maxLines = 2
-            )
+                Text(
+                    text = "Lieu : ${event.location}",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    color = Color.DarkGray
+                )
+                Text(
+                    text = "Catégorie : ${event.category}",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    color = Color.DarkGray
+                )
+                Text(
+                    text = event.description,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    maxLines = 2
+                )
+            }
+
+            // Icône de notification
+            IconButton(
+                onClick = {
+                    isNotified = !isNotified
+                    preferencesHelper.setEventNotification(event.id, isNotified)
+
+                    if (isNotified) {
+                        // Planifier la notification après 30 secondes
+                        val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
+                            .setInitialDelay(30, TimeUnit.SECONDS)
+                            .setInputData(workDataOf("title" to "Événement ajouté!", "message" to "Ne manquez pas cet événement!"))
+                            .build()
+
+                        // Planifier le travail avec WorkManager
+                        WorkManager.getInstance(context).enqueue(workRequest)
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = if (isNotified) Icons.Filled.Notifications else Icons.Filled.NotificationsOff,
+                    contentDescription = "Activer/Désactiver notification",
+                    tint = if (isNotified) Color.Green else Color.Gray
+                )
+            }
         }
     }
 }
