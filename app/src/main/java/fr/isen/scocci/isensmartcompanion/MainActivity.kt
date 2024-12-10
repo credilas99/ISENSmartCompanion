@@ -33,7 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import fr.isen.scocci.isensmartcompanion.composants.AgendaScreen
+import fr.isen.scocci.isensmartcompanion.agenda.AgendaScreen
 import fr.isen.scocci.isensmartcompanion.composants.EventScreen
 import fr.isen.scocci.isensmartcompanion.composants.HistoryScreen
 import fr.isen.scocci.isensmartcompanion.composants.MainScreen

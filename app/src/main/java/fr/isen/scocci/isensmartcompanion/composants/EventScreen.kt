@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import fr.isen.scocci.isensmartcompanion.EventDetailActivity
 import fr.isen.scocci.isensmartcompanion.R
@@ -175,7 +174,11 @@ fun fetchEvents(
 fun EventItem(event: Event, onClick: () -> Unit) {
     val context = LocalContext.current
     val preferencesHelper = remember { SharedPreferences(context) }
-    var isNotified by remember { mutableStateOf(preferencesHelper.isEventNotified(event.id)) }
+    var isNotified by remember {
+        mutableStateOf(preferencesHelper.isEventNotified(event.id))
+
+
+    }
 
     Card(
         modifier = Modifier
@@ -226,16 +229,21 @@ fun EventItem(event: Event, onClick: () -> Unit) {
             IconButton(
                 onClick = {
                     isNotified = !isNotified
-                    preferencesHelper.setEventNotification(event.id, isNotified)
+                    // Modification ici : passer l'événement complet
+                    preferencesHelper.setEventNotification(event, isNotified)
 
                     if (isNotified) {
-                        // Planifier la notification après 10 secondes
+                        // Planifier la notification
                         val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
                             .setInitialDelay(10, TimeUnit.SECONDS)
-                            .setInputData(workDataOf("title" to "Événement ajouté!", "message" to "Ne manquez pas cet événement!"))
+                            .setInputData(
+                                workDataOf(
+                                    "title" to "Événement ajouté!",
+                                    "message" to "Ne manquez pas: ${event.title}"
+                                )
+                            )
                             .build()
 
-                        // Planifier le travail avec WorkManager
                         WorkManager.getInstance(context).enqueue(workRequest)
                     }
                 }

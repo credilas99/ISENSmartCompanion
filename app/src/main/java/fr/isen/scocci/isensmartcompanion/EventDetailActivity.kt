@@ -3,6 +3,7 @@ package fr.isen.scocci.isensmartcompanion
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -22,7 +24,7 @@ class EventDetailActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // Récupération des extras de l'intent
-        val eventId = intent.getStringExtra("eventId") ?: "ID inconnu" // Changement ici
+        val eventId = intent.getStringExtra("eventId") ?: "ID inconnu"
         val eventTitle = intent.getStringExtra("eventTitle") ?: "Événement inconnu"
         val eventDate = intent.getStringExtra("eventDate") ?: "Date inconnue"
         val eventDescription =
@@ -31,14 +33,13 @@ class EventDetailActivity : ComponentActivity() {
         val eventCategory = intent.getStringExtra("eventCategory") ?: "Catégorie inconnue"
 
         setContent {
-            // Affichage de l'interface composable
             EventDetailScreen(
-                eventId, // Le paramètre eventId est maintenant un String
-                eventTitle,
-                eventDate,
-                eventDescription,
-                eventLocation,
-                eventCategory
+                id = eventId,
+                title = eventTitle,
+                date = eventDate,
+                description = eventDescription,
+                location = eventLocation,
+                category = eventCategory
             )
         }
     }
@@ -46,7 +47,7 @@ class EventDetailActivity : ComponentActivity() {
 
 @Composable
 fun EventDetailScreen(
-    id: String, // Le type de id est maintenant String
+    id: String,
     title: String,
     date: String,
     description: String,
@@ -56,49 +57,71 @@ fun EventDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(color = colorResource(id = R.color.red_2))
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.Start
     ) {
-        // Affiche le titre de l'événement
+        // Titre de l'événement
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 24.sp)
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 28.sp,
+                color = colorResource(id = R.color.red_1)
+            ),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp)) // Espacement entre les éléments
 
-        // Affiche la date de l'événement
+        // Ligne séparatrice
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Date
         Text(
-            text = "Date : $date",
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+            text = "📅 Date : $date",
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp),
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp)) // Espacement entre les éléments
 
-        // Affiche le lieu de l'événement
+        // Lieu
         Text(
-            text = "Lieu : $location",
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+            text = "📍 Lieu : $location",
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp),
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp)) // Espacement entre les éléments
 
-        // Affiche la catégorie de l'événement
+        // Catégorie
         Text(
-            text = "Catégorie : $category",
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp)
+            text = "📂 Catégorie : $category",
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        Spacer(modifier = Modifier.height(16.dp)) // Espacement entre les éléments
 
-        // Affiche la description de l'événement
+        // Description
+        Text(
+            text = "Description :",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 20.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            ),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         Text(
             text = description,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp)
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 16.sp),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Afficher l'ID de l'événement
-        Spacer(modifier = Modifier.height(16.dp)) // Espacement entre les éléments
+        // Ligne séparatrice
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ID de l'événement
         Text(
-            text = "ID de l'événement : $id", // Affiche l'ID de l'événement
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp)
+            text = "ID de l'événement : $id",
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 14.sp,
+                color = androidx.compose.ui.graphics.Color.Gray
+            ),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
     }
 }
